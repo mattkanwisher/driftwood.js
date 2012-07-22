@@ -7,13 +7,20 @@
 	<script type="text/javascript">
 		Driftwood.debug("test"); //This will use a static instance of the logger and output to the console
 		Driftwood.env("development"); //Debug and everything
-
-		var my_logger = new Driftwood.logger();
-		my_logger.env("production"); //Only problem
-		my_logger.debug("instance logger : Should not see this");
-		my_logger.error("instance logger : should see this");
+		Driftwood.applicationName("my awesome app!");
+		
+		var myLogger = new Driftwood.logger();
+		myLogger.env("production"); //Only problem
+		myLogger.debug("instance logger : Should not see this");
+		myLogger.error("instance logger : should see this");
 
 		Driftwood.debug("static logger: should see this");
+
+		//Now all the levels!
+		Driftwood.debug("Now all the log levels!");
+		Driftwood.info("Now all the log levels!");
+		Driftwood.error("Now all the log levels!");
+		Driftwood.exception("Now all the log levels!");
 
 		//Throw an uncaught exception and it should show up on the page and send a message to the server
 		Driftwood.env("production")

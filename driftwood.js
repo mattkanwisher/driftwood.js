@@ -15,12 +15,13 @@ var Driftwood = new function() {
 	  var levels = ["DEBUG", "INFO", "ERROR", "EXCEPTION", "NONE"]
 	  //Don't change the config directly. Instead use the helper methods below.
   	var config =  { 
-	  		console_level: "DEBUG", //This get changed if you change the environment
-	  		console_level_id: 0,
-	  		exception_level: "NONE", //In dev you probably don't want to transmit exceptions to the server
+	  		consoleLevel: "DEBUG", //This get changed if you change the environment
+	  		consoleLevelId: 0,
+	  		exceptionLevel: "NONE", //In dev you probably don't want to transmit exceptions to the server
+	  		exceptionLevelId: 99,
 	  		mode: "development", //This should either be development  or production
-	  		server_path: "http://app.dev/exceptions/notify?payload=",
-	  		application_name: "js_client" // this should be overriden by the user
+	  		serverPath: "/exceptions/notify?payload=",
+	  		applicationName: "js_client" // this should be overriden by the user
 	  	};
   	var findLevel = function(level) {
   		 return levels.indexOf(level.toUpperCase());
@@ -31,13 +32,19 @@ var Driftwood = new function() {
 		  // Will fix this in next rev
 		  //While this function is technically supposed to be private, we still expose it so you can modify it.
 		  _genExceptionUrl: function(error) {
-		    var url = config.server_path + encodeURIComponent(JSON.stringify(error));
+		    var url = config.serverPath + encodeURIComponent(JSON.stringify(error));
 		    return url;
 		  },
+		  //Generates the script tag, you could replace this implementation with one that loads images instead
+		  _genScriptTag: function(src) {
+ 		    var script = document.createElement("script");
+		    script.src = src;
+		    document.body.appendChild(script);
+			},
 		  //While this function is technically supposed to be private, we still expose it so you can modify it.
 	  	_createBlackBox: function(error) {
 			 var blackBox =	{
-		      "application_name": config.application_name,
+		      "application_name": config.applicationName,
 		      "message": error || "",
 		      
 		      // Request
@@ -56,44 +63,46 @@ var Driftwood = new function() {
 	  	},
 		  //Its safe to use this function with external servers since we do everything on the query string
   		url: function(murl) {
-  			config.server_path = murl; 
+  			config.serverPath = murl; 
   		},
 	  	env: function(menv) {
 	  		if(menv.toLowerCase() == "development") {
-	  			config.console_level = "DEBUG";
-	  			config.exception_level = "none";
-	  			config.console_level_id = 0;
-	  			config.exception_level_id = 4;
+	  			config.consoleLevel = "DEBUG";
+	  			config.exceptionLevel = "none";
+	  			config.consoleLevelId = 0;
+	  			config.exceptionLevelId = 4;
 	  		} else if(menv.toLowerCase() == "production") {
-	  			config.console_level = "ERROR";
-	  			config.exception_level = "none";
-	  			config.console_level_id = 2;
-	  			config.exception_level_id = 3;
+	  			config.consoleLevel = "ERROR";
+	  			config.exceptionLevel = "none";
+	  			config.consoleLevelId = 2;
+	  			config.exceptionLevelId = 3;
 	  		} else {
 	  			console.log("Unknown environment level");
 	  		}
 	  	},
-	  	log_level: function(level) {
+	  	applicationName: function(appname) {
+	  		config.applicationName = appname;
+	  	},
+	  	logLevel: function(level) {
 	  		var id = findLevel(level);
 	  		if( id > -1 ) {
-		  		config.console_level = level.toUpperCase();
-		  		config.console_level_id = id;
+		  		config.consoleLevel = level.toUpperCase();
+		  		config.consoleLevelId = id;
 		  	} else {
 		  		console.log("Setting an invalid log level: " + level);
 		  	}
 	  	},
-	  	exception_level: function(level) {
+	  	exceptionLevel: function(level) {
 	  		var id = findLevel(level);
 	  		if( id > -1 ) {
-		  		config.exception_level = level.toUpperCase();
-		  		config.exception_level_id = id;
+		  		config.exceptionLevel = level.toUpperCase();
+		  		config.exceptionLevelId = id;
 		  	} else {
 		  		console.log("Setting an invalid log level: " + level);
 		  	}
 	  	},
   		//The actually function that sends the data to the server
 			transmit: function(message, additionalData) {
-				console.log("sending data");
 			  var e = null;
 			  if (typeof message === "object") {
 			    e = message;
@@ -102,19 +111,16 @@ var Driftwood = new function() {
 			  
 			  var error = this._createBlackBox(message, additionalData);		  
 		    var src = this._genExceptionUrl(error);
-		    var script = document.createElement("script");
-		    script.src = src;
-		    document.body.appendChild(script);
+		    this._genScriptTag(src);
 			},
   		log: function(message, level) {
-  			var level_id = findLevel(level);
+  			var levelId = findLevel(level);
 				var d=new Date();
 
-  			if( level_id >= config.console_level_id ) {
-  				console.log( level + ":" + "["  + ISODateString(d) + "]"  + message + "-" + config.console_level_id + "_" + level_id);
+  			if( levelId >= config.consoleLevelId ) {
+  				console.log( level + ":" + "["  + ISODateString(d) + "] "  + message );
   			} 
-  			console.log("message-" +message+"level_id-"+level_id+"config.exception_level_id-"+ config.exception_level_id);
-  			if( level_id >= config.exception_level_id) {
+  			if( levelId >= config.exceptionLevelId) {
   				this.transmit(message);
   			}
   		},
@@ -144,39 +150,41 @@ var Driftwood = new function() {
   	}
   };		
 
-  default_logger = new this.logger();
+  defaultLogger = new this.logger();
   this.exception = function(message,extraInfo) {
-  	default_logger.exception(message,extraInfo);
+  	defaultLogger.exception(message,extraInfo);
   }  
+  this.applicationName = function(appname){
+  	defaultLogger.applicationName(appname);
+  }
 
   //Convience methods around the logger to have a static instance
   this.debug = function(message) {
-  	default_logger.debug(message);
+  	defaultLogger.debug(message);
   };
   this.info = function(message) {
-  	default_logger.info(message);
+  	defaultLogger.info(message);
   };
   this.error = function(message) {
-  	default_logger.error(message);
+  	defaultLogger.error(message);
   };
 
   this.env = function(mode) {
-  	default_logger.env(mode);
+  	defaultLogger.env(mode);
   };
 
- this.exception_level =  function(level) {
- 	default_logger.exception_level(mode);
+ this.exceptionLevel =  function(level) {
+ 	defaultLogger.exceptionLevel(mode);
   };
 
- this.log_level =  function(level) {
- 	default_logger.log_level(mode);
+ this.logLevel =  function(level) {
+ 	defaultLogger.logLevel(mode);
   };
 
 };
 
 // Global error handler
 window.onerror = function(message, url, line) {
-	console.log("in window exception");
   Driftwood.exception(message, {"url": url, "line": line});
 };
 //Mozilla implementation of Array.indexOf, for IE < 9
