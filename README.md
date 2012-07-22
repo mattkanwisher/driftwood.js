@@ -11,7 +11,7 @@ The following goals of driftwood :
 * Allow exceptions or logs to be sent to a backend server. If an error falls in the forrest and no one hears it did it really happen?
 
 
-We have a static logger called Drifwood, feel free to call the usual methods on it, debug, info, error.
+We have a static logger called Driftwood, feel free to call the usual methods on it, debug, info, error.
 ```
 Driftwood.debug("test"); 
 ```
@@ -39,7 +39,7 @@ my_logger.log_level("INFO")
 Driftwood.log_level("ERROR")
 ```
 
-By default any uncaught exceptions in your app win goto Driftwood, to manually send one
+By default any uncaught exceptions in your application's window will goto Driftwood, to manually send one
 ```
 Driftwood.exception("Message here")
 Driftwood.exception(exception_obj)
