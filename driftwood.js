@@ -1,14 +1,19 @@
+// **Driftwood.js** is a super simple logging and exception tracking library for client side javascript. Works in all major browsers.
+//
+//[Driftwood on Github](https://github.com/errplane/driftwood.js)
+//
+//Matthew Kanwisher [Errplane Inc](http://errplane.com)  
 //MIT License
-//Matthew Kanwisher
-//Copyright 2012 Errplane Inc 
+//Copyright 2012 Errplane
 
-// Simple javascript logging library, including exception postings
-
+// Driftwood namespace is a static namespace for logging, if you want instances of loggers do:
+//
+//		  var logger = new Driftwood.logger();
 var Driftwood = new function() {
 
   this.logger  = function() {
 	  var levels = ["DEBUG", "INFO", "ERROR", "EXCEPTION", "NONE"]
-	  //Don't change the config directly
+	  //Don't change the config directly. Instead use the helper methods below.
   	var config =  { 
 	  		console_level: "DEBUG", //This get changed if you change the environment
 	  		console_level_id: 0,
@@ -75,7 +80,6 @@ var Driftwood = new function() {
 	  	info: function(message) {
 	  		this.log(message, "INFO")
   		},
-  		//Error is a special case we probably 
 	  	error: function(message) {
 	  		this.log(message, "ERROR");
   		},
