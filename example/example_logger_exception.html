@@ -1,0 +1,24 @@
+<html>
+<body>
+
+	<script type="text/javascript" src="../driftwood.js">
+	</script>
+
+	<script type="text/javascript">
+		Driftwood.debug("test"); //This will use a static instance of the logger and output to the console
+		Driftwood.env("development"); //Debug and everything
+
+		var my_logger = new Driftwood.logger();
+		my_logger.env("production"); //Only problem
+		my_logger.debug("instance logger : Should not see this");
+		my_logger.error("instance logger : should see this");
+
+		Driftwood.debug("static logger: should see this");
+
+		//Throw an uncaught exception and it should show up on the page and send a message to the server
+		throw new Error("Should see this on the console and on the server");
+	</script>
+
+	<h1> Sshhh check your javascript console or the network tab to see this example ! </h1>
+</body>
+</html>

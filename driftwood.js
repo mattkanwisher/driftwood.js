@@ -9,15 +9,13 @@ var Driftwood = new function() {
   this.logger  = function() {
 	  var levels = ["DEBUG", "INFO", "ERROR", "EXCEPTION", "NONE"]
 	  //Don't change the config directly
-  	var config =  function() {		
-  		return { 
+  	var config =  { 
 	  		console_level: "DEBUG", //This get changed if you change the environment
 	  		console_level_id: 0,
 	  		exception_level: "NONE", //In dev you probably don't want to transmit exceptions to the server
 	  		mode: "development", //This should either be development  or production
 	  		server_path: "/exceptions/notify" // this should be overriden by the user
 	  	};
-  	};
   	var find_level = function(level) {
   		 return levels.indexOf(level.toUpperCase());
   	};
@@ -27,12 +25,12 @@ var Driftwood = new function() {
   			config.server_path = murl; 
   		},
 	  	env: function(menv) {
-	  		if(menv == "development") {
+	  		if(menv.toLowerCase() == "development") {
 	  			config.console_level = "DEBUG";
 	  			config.exception_level = "none";
 	  			config.console_level_id = 0;
-	  			config.exception_level_id = 99;
-	  		} else if(menv == "production") {
+	  			config.exception_level_id = 4;
+	  		} else if(menv.toLowerCase() == "production") {
 	  			config.console_level = "ERROR";
 	  			config.exception_level = "none";
 	  			config.console_level_id = 2;
@@ -44,8 +42,8 @@ var Driftwood = new function() {
 	  	log_level: function(level) {
 	  		var id = find_level(level);
 	  		if( id > -1 ) {
-		  		console_level = level.toUpperCase();
-		  		console_level_id = id;
+		  		config.console_level = level.toUpperCase();
+		  		config.console_level_id = id;
 		  	} else {
 		  		console.log("Setting an invalid log level: " + level);
 		  	}
@@ -62,9 +60,10 @@ var Driftwood = new function() {
   		log: function(message, level) {
   			var level_id = find_level(level);
 				var d=new Date();
+				debugger;
 
   			if( level_id >= config.console_level_id ) {
-  				console.log( level + ":" + "["  + ISODateString(d) + "]"  + message);
+  				console.log( level + ":" + "["  + ISODateString(d) + "]"  + message + "-" + config.console_level_id + "_" + level_id);
   			} 
   			if( level_id >= config.exception_level_id) {
   				self.transmit(message);
@@ -88,7 +87,7 @@ var Driftwood = new function() {
   			return;
   		},
   		//You can pass an exception or string to this function
-		  getBackTrace = function(message, url, line) {
+		  getBackTrace: function(message, url, line) {
 		    var backTrace = "";
 		    if (typeof message === "object") {
 		      backTrace = printStackTrace({"e": message});
@@ -96,7 +95,7 @@ var Driftwood = new function() {
 		      backTrace = printStackTrace();
 		    }
 		    return backTrace.join("\n");
-		  };
+		  }
 
   	}
   };		
