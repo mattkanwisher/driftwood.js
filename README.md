@@ -47,13 +47,15 @@ Driftwood.exception(exception_obj)
 
 To configure your backend url. *note this is cross origin safe since we use gets
 ```
-Driftwood.url("/errors/test?")
+Driftwood.url("/errors/test?payload=")
 ```
 
+<!--
 Also if you don't have a backend you can use it with your [Errplane account](http://errplane.com)
 ```
-Driftwood.url("https://api.errplane.com/v1/jserrors/test?apikey=<write_only_api_key>&=")
+Driftwood.url("https://api.errplane.com/v1/jserrors/test?apikey=<write_only_api_key>&payload=")
 ```
+-->
 
 To check out a nicely formatted help page of the source code
 

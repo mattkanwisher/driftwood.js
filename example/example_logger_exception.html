@@ -16,6 +16,7 @@
 		Driftwood.debug("static logger: should see this");
 
 		//Throw an uncaught exception and it should show up on the page and send a message to the server
+		Driftwood.env("production")
 		throw new Error("Should see this on the console and on the server");
 	</script>
 
