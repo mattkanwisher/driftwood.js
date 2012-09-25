@@ -11,6 +11,7 @@
 //		  var logger = new Driftwood.logger();
 
 //Handle IE and browsers that don't have all the console logging features
+//Stolen from http://patik.com/blog/complete-cross-browser-console-log/
 (function() {
 
 	// Tell IE9 to use its built-in console
