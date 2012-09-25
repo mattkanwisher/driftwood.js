@@ -8,157 +8,166 @@
 
 // Driftwood namespace is a static namespace for logging, if you want instances of loggers do:
 //
-//		  var logger = new Driftwood.logger();
+//      var logger = new Driftwood.logger();
 
 
 var Driftwood = new function() {
 
   this.logger  = function() {
-	  var levels = ["DEBUG", "INFO", "ERROR", "EXCEPTION", "NONE"]
-	  //Don't change the config directly. Instead use the helper methods below.
-  	var config =  { 
-	  		consoleLevel: "DEBUG", //This get changed if you change the environment
-	  		consoleLevelId: 0,
-	  		exceptionLevel: "NONE", //In dev you probably don't want to transmit exceptions to the server
-	  		exceptionLevelId: 99,
-	  		mode: "development", //This should either be development  or production
-	  		serverPath: "/exceptions/notify?payload=",
-	  		applicationName: "js_client" // this should be overriden by the user
-	  	};
-  	var findLevel = function(level) {
-  		 return levels.indexOf(level.toUpperCase());
-  	};
+    var levels = ["DEBUG", "INFO", "ERROR", "EXCEPTION", "NONE"]
+    //Don't change the config directly. Instead use the helper methods below.
+    var config =  { 
+        consoleLevel: "DEBUG", //This get changed if you change the environment
+        consoleLevelId: 0,
+        exceptionLevel: "NONE", //In dev you probably don't want to transmit exceptions to the server
+        exceptionLevelId: 99,
+        mode: "development", //This should either be development  or production
+        serverPath: "/exceptions/notify?payload=",
+        applicationName: "js_client" // this should be overriden by the user
+      };
+    var findLevel = function(level) {
+       return levels.indexOf(level.toUpperCase());
+    };
+
+
+    //Generates the script tag, you could replace this implementation with one that loads images instead
+    function genScriptTag(src) {
+      var script = document.createElement("script");
+      script.src = src;
+      document.body.appendChild(script);
+    };
+
+    function genExceptionUrl(error) {
+        var url = config.serverPath + encodeURIComponent(JSON.stringify(error));
+        return url;
+      };
+
+
+    //While this function is technically supposed to be private, we still expose it so you can modify it.
+    function createBlackBox(error) {
+     var blackBox = {
+        "application_name": config.applicationName,
+        "message": error || "",
+        
+        // Request
+        "url": window.location.toString(),
+        "language":"javascript",
+        "custom_data": { 
+          "hostname": window.location.hostname,
+          "user_agent": navigator.userAgent || "",
+          "referrer": document.referrer || "",
+          "cookies": document.cookie || "",
+        },
+        "backtrace": getBackTrace(error),
+        "exception_class": "Javscript#Unknown" //TODO figure out what the class should be
+      }
+      return blackBox;
+    };
+
+    //You can pass an exception or string to this function
+    function getBackTrace(message, url, line) {
+        var backTrace = ["no backtrace"];
+        if (typeof message === "object") {
+          backTrace = printStackTrace({"e": message});
+        } else {
+          backTrace = printStackTrace();
+        }
+        return backTrace;
+    };
+
+
+    //The actually function that sends the data to the server
+    function transmit (message, additionalData) {
+      var e = null;
+      if (typeof message === "object") {
+        e = message;
+        message = e.message;
+      }
+      
+      var error = createBlackBox(message, additionalData);      
+      var src = genExceptionUrl(error);
+      genScriptTag(src);
+    };
+
     function log(args, level, fn) {
-  			var levelId = findLevel(level);
-				var d=new Date();
+        var levelId = findLevel(level);
+        var d=new Date();
 
-  			if( levelId >= config.consoleLevelId ) {
-  				args[0] =  level + ":" + "["  + ISODateString(d) + "] "  + args[0] ;
-  			} 
-  			if( levelId >= config.exceptionLevelId) {
-  				this.transmit(args[0]);
-  			}
-  			fn.apply(console,  Array.prototype.slice.call(args));
-  		};
-  	return {
-		  // Creates a notification URL
-		  // Currently were not validating that urls are under 2048 charecters, so this could cause problems in IE.
-		  // Will fix this in next rev
-		  //While this function is technically supposed to be private, we still expose it so you can modify it.
-		  _genExceptionUrl: function(error) {
-		    var url = config.serverPath + encodeURIComponent(JSON.stringify(error));
-		    return url;
-		  },
-		  //Generates the script tag, you could replace this implementation with one that loads images instead
-		  _genScriptTag: function(src) {
- 		    var script = document.createElement("script");
-		    script.src = src;
-		    document.body.appendChild(script);
-			},
-		  //While this function is technically supposed to be private, we still expose it so you can modify it.
-	  	_createBlackBox: function(error) {
-			 var blackBox =	{
-		      "application_name": config.applicationName,
-		      "message": error || "",
-		      
-		      // Request
-		      "url": window.location.toString(),
-		      "language":"javascript",
-		      "custom_data": { 
-			      "hostname": window.location.hostname,
-			      "user_agent": navigator.userAgent || "",
-			      "referrer": document.referrer || "",
-			      "cookies": document.cookie || "",
-			    },
-		      "backtrace": this.getBackTrace(error),
-		      "exception_class": "Javscript#Unknown" //TODO figure out what the class should be
-		    }
-	  		return blackBox;
-	  	},
-		  //Its safe to use this function with external servers since we do everything on the query string
-  		setServerPath: function(murl) {
-  			config.serverPath = murl; 
-  		},
-	  	env: function(menv) {
-	  		if(menv.toLowerCase() == "development") {
-	  			config.consoleLevel = "DEBUG";
-	  			config.exceptionLevel = "none";
-	  			config.consoleLevelId = 0;
-	  			config.exceptionLevelId = 4;
-	  		} else if(menv.toLowerCase() == "production") {
-	  			config.consoleLevel = "ERROR";
-	  			config.exceptionLevel = "none";
-	  			config.consoleLevelId = 2;
-	  			config.exceptionLevelId = 3;
-	  		} else {
-	  			console.log("Unknown environment level");
-	  		}
-	  	},
-	  	applicationName: function(appname) {
-	  		config.applicationName = appname;
-	  	},
-	  	logLevel: function(level) {
-	  		var id = findLevel(level);
-	  		if( id > -1 ) {
-		  		config.consoleLevel = level.toUpperCase();
-		  		config.consoleLevelId = id;
-		  	} else {
-		  		console.log("Setting an invalid log level: " + level);
-		  	}
-	  	},
-	  	exceptionLevel: function(level) {
-	  		var id = findLevel(level);
-	  		if( id > -1 ) {
-		  		config.exceptionLevel = level.toUpperCase();
-		  		config.exceptionLevelId = id;
-		  	} else {
-		  		console.log("Setting an invalid log level: " + level);
-		  	}
-	  	},
-  		//The actually function that sends the data to the server
-			transmit: function(message, additionalData) {
-			  var e = null;
-			  if (typeof message === "object") {
-			    e = message;
-			    message = e.message;
-			  }
-			  
-			  var error = this._createBlackBox(message, additionalData);		  
-		    var src = this._genExceptionUrl(error);
-		    this._genScriptTag(src);
-			},
-	  	debug: function() {
-	  		this.log(arguments, "DEBUG", console.debug);
-  		},
-	  	info: function() {
-	  		this.log(arguments, "INFO", console.info)
-  		},
-	  	error: function() {
-	  		this.log(arguments, "ERROR", console.error);
-  		},
-  		exception: function() {
-  			this.log(arguments, "EXCEPTION",console.error);
-  		},
-  		//You can pass an exception or string to this function
-		  getBackTrace: function(message, url, line) {
-		    var backTrace = ["no backtrace"];
-		    if (typeof message === "object") {
-		      backTrace = printStackTrace({"e": message});
-		    } else {
-		      backTrace = printStackTrace();
-		    }
-		    return backTrace;
-		  }
+        if( levelId >= config.consoleLevelId ) {
+          args[0] =  level + ":" + "["  + ISODateString(d) + "] "  + args[0] ;
+        } 
+        if( levelId >= config.exceptionLevelId) {
+          transmit(args[0]);
+        }
+        fn.apply(console,  Array.prototype.slice.call(args));
+      };
+    return {
+      // Creates a notification URL
+      // Currently were not validating that urls are under 2048 charecters, so this could cause problems in IE.
+      // Will fix this in next rev
+      //While this function is technically supposed to be private, we still expose it so you can modify it.
 
-  	}
-  };		
+      //Its safe to use this function with external servers since we do everything on the query string
+      setServerPath: function(murl) {
+        config.serverPath = murl; 
+      },
+      env: function(menv) {
+        if(menv.toLowerCase() == "development") {
+          config.consoleLevel = "DEBUG";
+          config.exceptionLevel = "none";
+          config.consoleLevelId = 0;
+          config.exceptionLevelId = 4;
+        } else if(menv.toLowerCase() == "production") {
+          config.consoleLevel = "ERROR";
+          config.exceptionLevel = "none";
+          config.consoleLevelId = 2;
+          config.exceptionLevelId = 3;
+        } else {
+          console.log("Unknown environment level");
+        }
+      },
+      applicationName: function(appname) {
+        config.applicationName = appname;
+      },
+      logLevel: function(level) {
+        var id = findLevel(level);
+        if( id > -1 ) {
+          config.consoleLevel = level.toUpperCase();
+          config.consoleLevelId = id;
+        } else {
+          console.log("Setting an invalid log level: " + level);
+        }
+      },
+      exceptionLevel: function(level) {
+        var id = findLevel(level);
+        if( id > -1 ) {
+          config.exceptionLevel = level.toUpperCase();
+          config.exceptionLevelId = id;
+        } else {
+          console.log("Setting an invalid log level: " + level);
+        }
+      },
+      debug: function() {
+        log(arguments, "DEBUG", console.debug);
+      },
+      info: function() {
+        log(arguments, "INFO", console.info)
+      },
+      error: function() {
+        log(arguments, "ERROR", console.error);
+      },
+      exception: function(args) {
+        log(args, "EXCEPTION",console.error);
+      }
+    }
+  };    
 
   defaultLogger = new this.logger();
   this.exception = function() {
-  	defaultLogger.exception(arguments);
+    defaultLogger.exception(arguments);
   }  
   this.applicationName = function(appname){
-  	defaultLogger.applicationName(appname);
+    defaultLogger.applicationName(appname);
   }
 
   //Convience methods around the logger to have a static instance
@@ -167,19 +176,19 @@ var Driftwood = new function() {
   this.error = defaultLogger.error;
 
   this.env = function(mode) {
-  	defaultLogger.env(mode);
+    defaultLogger.env(mode);
   };
 
   this.setServerPath = function(u) {
-  	defaultLogger.setServerPath(u);
+    defaultLogger.setServerPath(u);
   };
 
  this.exceptionLevel =  function(level) {
- 	defaultLogger.exceptionLevel(level);
+  defaultLogger.exceptionLevel(level);
   };
 
  this.logLevel =  function(level) {
- 	defaultLogger.logLevel(level);
+  defaultLogger.logLevel(level);
   };
 
 };
