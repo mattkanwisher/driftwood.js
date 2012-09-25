@@ -62,7 +62,7 @@ var Driftwood = new function() {
 	  		return blackBox;
 	  	},
 		  //Its safe to use this function with external servers since we do everything on the query string
-  		url: function(murl) {
+  		setServerPath: function(murl) {
   			config.serverPath = murl; 
   		},
 	  	env: function(menv) {
@@ -173,12 +173,16 @@ var Driftwood = new function() {
   	defaultLogger.env(mode);
   };
 
+  this.setServerPath = function(u) {
+  	defaultLogger.setServerPath(u);
+  };
+
  this.exceptionLevel =  function(level) {
- 	defaultLogger.exceptionLevel(mode);
+ 	defaultLogger.exceptionLevel(level);
   };
 
  this.logLevel =  function(level) {
- 	defaultLogger.logLevel(mode);
+ 	defaultLogger.logLevel(level);
   };
 
 };

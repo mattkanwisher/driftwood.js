@@ -35,8 +35,8 @@ my_logger.error("instance logger : should see this");
 ```
 To configure log levels
 ```
-my_logger.log_level("INFO")
-Driftwood.log_level("ERROR")
+my_logger.logLevel("INFO")
+Driftwood.logLevel("ERROR")
 ```
 
 By default any uncaught exceptions in your application's window will goto Driftwood, to manually send one
@@ -47,7 +47,7 @@ Driftwood.exception(exception_obj)
 
 To configure your backend url. *note this is cross origin safe since we use gets
 ```
-Driftwood.url("/errors/test?payload=")
+Driftwood.setServerPath("/errors/test?payload=")
 ```
 
 <!--
