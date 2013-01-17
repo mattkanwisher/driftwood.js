@@ -11,19 +11,21 @@
 //      var logger = new Driftwood.logger();
 
 
+//TODO REMOVE
 var Driftwood = new function() {
 
   this.logger  = function() {
-    var levels = ["DEBUG", "INFO", "ERROR", "EXCEPTION", "NONE"]
+    var levels = ["NONE", "DEBUG", "INFO", "ERROR", "EXCEPTION", "NONE"]
     //Don't change the config directly. Instead use the helper methods below.
-    var config =  { 
+    var config =  {
         consoleLevel: "DEBUG", //This get changed if you change the environment
         consoleLevelId: 0,
         exceptionLevel: "NONE", //In dev you probably don't want to transmit exceptions to the server
         exceptionLevelId: 99,
         mode: "development", //This should either be development  or production
         serverPath: "/exceptions/notify?payload=",
-        applicationName: "js_client" // this should be overriden by the user
+        applicationName: "js_client", // this should be overriden by the user
+        cors: false
       };
     var findLevel = function(level) {
        return levels.indexOf(level.toUpperCase());
@@ -37,6 +39,10 @@ var Driftwood = new function() {
       document.body.appendChild(script);
     };
 
+    function postViaAjax(src, data){
+      debugger
+    };
+
     function genExceptionUrl(error) {
         var url = config.serverPath + encodeURIComponent(JSON.stringify(error));
         return url;
@@ -48,11 +54,11 @@ var Driftwood = new function() {
      var blackBox = {
         "application_name": config.applicationName,
         "message": error || "",
-        
+
         // Request
         "url": window.location.toString(),
         "language":"javascript",
-        "custom_data": { 
+        "custom_data": {
           "hostname": window.location.hostname,
           "user_agent": navigator.userAgent || "",
           "referrer": document.referrer || "",
@@ -83,10 +89,16 @@ var Driftwood = new function() {
         e = message;
         message = e.message;
       }
-      
-      var error = createBlackBox(message, additionalData);      
+
+      var error = createBlackBox(message, additionalData);
       var src = genExceptionUrl(error);
-      genScriptTag(src);
+      //For cross origin domains use a script tag
+      if(config.cors == true) {
+        genScriptTag(src);
+      } else {
+        postViaAjax(src)
+      }
+
     };
 
     function log(args, level, fn) {
@@ -95,11 +107,14 @@ var Driftwood = new function() {
 
         if( levelId >= config.consoleLevelId ) {
           args[0] =  level + ":" + "["  + ISODateString(d) + "] "  + args[0] ;
-        } 
+        }
         if( levelId >= config.exceptionLevelId) {
           transmit(args[0]);
         }
-        fn.apply(console,  Array.prototype.slice.call(args));
+        //TODO: REMOVE THIS!
+        if (navigator.appName != 'Microsoft Internet Explorer') {
+          fn.apply(console,  Array.prototype.slice.call(args));
+        }
       };
     return {
       // Creates a notification URL
@@ -109,7 +124,7 @@ var Driftwood = new function() {
 
       //Its safe to use this function with external servers since we do everything on the query string
       setServerPath: function(murl) {
-        config.serverPath = murl; 
+        config.serverPath = murl;
       },
       env: function(menv) {
         if(menv.toLowerCase() == "development") {
@@ -160,12 +175,12 @@ var Driftwood = new function() {
         log(args, "EXCEPTION",console.error);
       }
     }
-  };    
+  };
 
   defaultLogger = new this.logger();
   this.exception = function() {
     defaultLogger.exception(arguments);
-  }  
+  }
   this.applicationName = function(appname){
     defaultLogger.applicationName(appname);
   }
@@ -184,7 +199,16 @@ var Driftwood = new function() {
   };
 
  this.exceptionLevel =  function(level) {
-  defaultLogger.exceptionLevel(level);
+    if(level != "NONE") {
+      defaultLogger.exceptionLevel(level);
+    }
+    //NONE is a special case, we will override our methods and use the console.log methods
+    else {
+      this.debug = _.bind(console.debug, console);
+      this.info = _.bind(console.info, console);
+      this.error = _.bind(console.error, console);
+      this.log = _.bind(console.log, console);
+    }
   };
 
  this.logLevel =  function(level) {
@@ -212,8 +236,9 @@ var JSON;JSON||(JSON={}),function(){function f(a){return a<10?"0"+a:a}function q
 // https://raw.github.com/eriwen/javascript-stacktrace/master/stacktrace.js
 function printStackTrace(a){a=a||{guess:!0};var b=a.e||null,c=!!a.guess,d=new printStackTrace.implementation,e=d.run(b);return c?d.guessAnonymousFunctions(e):e}printStackTrace.implementation=function(){},printStackTrace.implementation.prototype={run:function(a,b){return a=a||this.createException(),b=b||this.mode(a),b==="other"?this.other(arguments.callee):this[b](a)},createException:function(){try{this.undef()}catch(a){return a}},mode:function(a){return a.arguments&&a.stack?"chrome":typeof a.message=="string"&&typeof window!="undefined"&&window.opera?a.stacktrace?a.message.indexOf("\n")>-1&&a.message.split("\n").length>a.stacktrace.split("\n").length?"opera9":a.stack?a.stacktrace.indexOf("called from line")<0?"opera10b":"opera11":"opera10a":"opera9":a.stack?"firefox":"other"},instrumentFunction:function(a,b,c){a=a||window;var d=a[b];a[b]=function(){return c.call(this,printStackTrace().slice(4)),a[b]._instrumented.apply(this,arguments)},a[b]._instrumented=d},deinstrumentFunction:function(a,b){a[b].constructor===Function&&a[b]._instrumented&&a[b]._instrumented.constructor===Function&&(a[b]=a[b]._instrumented)},chrome:function(a){var b=(a.stack+"\n").replace(/^\S[^\(]+?[\n$]/gm,"").replace(/^\s+(at eval )?at\s+/gm,"").replace(/^([^\(]+?)([\n$])/gm,"{anonymous}()@$1$2").replace(/^Object.<anonymous>\s*\(([^\)]+)\)/gm,"{anonymous}()@$1").split("\n");return b.pop(),b},firefox:function(a){return a.stack.replace(/(?:\n@:0)?\s+$/m,"").replace(/^\(/gm,"{anonymous}(").split("\n")},opera11:function(a){var b="{anonymous}",c=/^.*line (\d+), column (\d+)(?: in (.+))? in (\S+):$/,d=a.stacktrace.split("\n"),e=[];for(var f=0,g=d.length;f<g;f+=2){var h=c.exec(d[f]);if(h){var i=h[4]+":"+h[1]+":"+h[2],j=h[3]||"global code";j=j.replace(/<anonymous function: (\S+)>/,"$1").replace(/<anonymous function>/,b),e.push(j+"@"+i+" -- "+d[f+1].replace(/^\s+/,""))}}return e},opera10b:function(a){var b="{anonymous}",c=/^(.*)@(.+):(\d+)$/,d=a.stacktrace.split("\n"),e=[];for(var f=0,g=d.length;f<g;f++){var h=c.exec(d[f]);if(h){var i=h[1]?h[1]+"()":"global code";e.push(i+"@"+h[2]+":"+h[3])}}return e},opera10a:function(a){var b="{anonymous}",c=/Line (\d+).*script (?:in )?(\S+)(?:: In function (\S+))?$/i,d=a.stacktrace.split("\n"),e=[];for(var f=0,g=d.length;f<g;f+=2){var h=c.exec(d[f]);if(h){var i=h[3]||b;e.push(i+"()@"+h[2]+":"+h[1]+" -- "+d[f+1].replace(/^\s+/,""))}}return e},opera9:function(a){var b="{anonymous}",c=/Line (\d+).*script (?:in )?(\S+)/i,d=a.message.split("\n"),e=[];for(var f=2,g=d.length;f<g;f+=2){var h=c.exec(d[f]);h&&e.push(b+"()@"+h[2]+":"+h[1]+" -- "+d[f+1].replace(/^\s+/,""))}return e},other:function(a){var b="{anonymous}",c=/function\s*([\w\-$]+)?\s*\(/i,d=[],e,f,g=10;while(a&&a.arguments&&d.length<g)e=c.test(a.toString())?RegExp.$1||b:b,f=Array.prototype.slice.call(a.arguments||[]),d[d.length]=e+"("+this.stringifyArguments(f)+")",a=a.caller;return d},stringifyArguments:function(a){var b=[],c=Array.prototype.slice;for(var d=0;d<a.length;++d){var e=a[d];e===undefined?b[d]="undefined":e===null?b[d]="null":e.constructor&&(e.constructor===Array?e.length<3?b[d]="["+this.stringifyArguments(e)+"]":b[d]="["+this.stringifyArguments(c.call(e,0,1))+"..."+this.stringifyArguments(c.call(e,-1))+"]":e.constructor===Object?b[d]="#object":e.constructor===Function?b[d]="#function":e.constructor===String?b[d]='"'+e+'"':e.constructor===Number&&(b[d]=e))}return b.join(",")},sourceCache:{},ajax:function(a){var b=this.createXMLHTTPObject();if(b)try{return b.open("GET",a,!1),b.notify(null),b.responseText}catch(c){}return""},createXMLHTTPObject:function(){var a,b=[function(){return new XMLHttpRequest},function(){return new ActiveXObject("Msxml2.XMLHTTP")},function(){return new ActiveXObject("Msxml3.XMLHTTP")},function(){return new ActiveXObject("Microsoft.XMLHTTP")}];for(var c=0;c<b.length;c++)try{return a=b[c](),this.createXMLHTTPObject=b[c],a}catch(d){}},isSameDomain:function(a){return a.indexOf(location.hostname)!==-1},getSource:function(a){return a in this.sourceCache||(this.sourceCache[a]=this.ajax(a).split("\n")),this.sourceCache[a]},guessAnonymousFunctions:function(a){for(var b=0;b<a.length;++b){var c=/\{anonymous\}\(.*\)@(.*)/,d=/^(.*?)(?::(\d+))(?::(\d+))?(?: -- .+)?$/,e=a[b],f=c.exec(e);if(f){var g=d.exec(f[1]);if(g){var h=g[1],i=g[2],j=g[3]||0;if(h&&this.isSameDomain(h)&&i){var k=this.guessAnonymousFunction(h,i,j);a[b]=e.replace("{anonymous}",k)}}}}return a},guessAnonymousFunction:function(a,b,c){var d;try{d=this.findFunctionName(this.getSource(a),b)}catch(e){d="getSource failed with url: "+a+", exception: "+e.toString()}return d},findFunctionName:function(a,b){var c=/function\s+([^(]*?)\s*\(([^)]*)\)/,d=/['"]?([0-9A-Za-z_]+)['"]?\s*[:=]\s*function\b/,e=/['"]?([0-9A-Za-z_]+)['"]?\s*[:=]\s*(?:eval|new Function)\b/,f="",g,h=Math.min(b,20),i,j;for(var k=0;k<h;++k){g=a[b-k-1],j=g.indexOf("//"),j>=0&&(g=g.substr(0,j));if(g){f=g+f,i=d.exec(f);if(i&&i[1])return i[1];i=c.exec(f);if(i&&i[1])return i[1];i=e.exec(f);if(i&&i[1])return i[1]}}return"(?)"}};
 
+
 if (typeof console == "undefined") {
-    var console = { log: function() {} }; 
+    var console = { log: function() {} };
 };
 
 
@@ -229,3 +254,6 @@ if (Function.prototype.bind && console && typeof console.log == "object") {
 if(typeof console.debug == "undefined") {
   console.debug = console.log;
 }
+
+//simple Driftwood alias
+window.D = Driftwood;
