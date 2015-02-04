@@ -1,0 +1,10 @@
+{
+  "name": "driftwood.js",
+  "version": "1.0.0",
+  "main": "driftwood.js",
+  "ignore": [
+    "README.md",
+    "example/"
+    "test/"
+  ]
+}
