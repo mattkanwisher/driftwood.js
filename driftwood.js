@@ -56,10 +56,10 @@ var Driftwood = new function() {
         "message": error || "",
 
         // Request
-        "url": window.location.toString(),
+        "url": location.href,
         "language":"javascript",
         "custom_data": {
-          "hostname": window.location.hostname,
+          "hostname": location.hostname,
           "user_agent": navigator.userAgent || "",
           "referrer": document.referrer || "",
           "cookies": document.cookie || "",
